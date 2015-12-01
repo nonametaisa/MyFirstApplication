@@ -30,13 +30,13 @@ public class MainActivity extends ActionBarActivity {
     private int RESULT_PICK_FILENAME = 1;
 
     private ImageView mMainImageView , mSubImageView;
-    private Button mSelectButton , mActButton , mCancelButton , mNextButton ;
+    private Button mSelectButton , mActButton , mCancelButton , mNextButton , mPlusButton , mMinusButton ;
     private Bitmap mSrcBitmap , mDstBitmap , mBallBitmap ;
     private int mFlag = 0;
     private MediaMetadataRetriever mMediaMetadataRetriever;
     private Mat mSrcMat , mDstMat;
     private int mIntSelectCircle=0;
-    private int mVideoTime;
+    private int mVideoTime , mTimeToPicture;
     private Context mContext;
 
     private OpneCVUse opencvuse ;
@@ -52,6 +52,8 @@ public class MainActivity extends ActionBarActivity {
         mActButton = (Button)findViewById(R.id.actButton);
         mCancelButton = (Button)findViewById(R.id.cancelButton);
         mNextButton = (Button)findViewById(R.id.nextButton);
+        mMinusButton = (Button)findViewById(R.id.minusButton);
+        mPlusButton = (Button)findViewById(R.id.plusButton);
 
         opencvuse = new OpneCVUse();
 
@@ -76,15 +78,21 @@ public class MainActivity extends ActionBarActivity {
                     Toast.makeText(mContext,String.valueOf(mVideoTime) , Toast.LENGTH_SHORT).show();
 
                    // setImage(mVideoTime / 500);
+                    mTimeToPicture = mVideoTime / 200;
                     setImage(0);
                    // mMainImageView.setImageBitmap(mSrcBitmap);
 
-                   mDstBitmap =opencvuse.setCircleMat(mSrcBitmap);
-                    mMainImageView.setImageBitmap(mDstBitmap);
+             //      mDstBitmap =opencvuse.setCircleMat(mSrcBitmap);
+                    mMainImageView.setImageBitmap(opencvuse.setCircleMat(mSrcBitmap));
 
                     mFlag =2;
 
-                }else {
+                }else if (mFlag == 3){
+
+                    mMainImageView.setImageBitmap(opencvuse.getLineImage(mSrcBitmap));
+
+                }
+                else {
                     Toast.makeText(mContext ,"先にSelectButtonを押してください",Toast.LENGTH_SHORT).show();
                 }
 
@@ -116,6 +124,43 @@ public class MainActivity extends ActionBarActivity {
             @Override
             public void onClick(View v) {
 
+            }
+        });
+
+        mPlusButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (mFlag ==2){
+
+                    mTimeToPicture += 5;
+                    if (mVideoTime > (mTimeToPicture * 200)){
+                        setImage(mTimeToPicture);
+                        mMainImageView.setImageBitmap(opencvuse.setCircleMat(mSrcBitmap));
+                    }else {
+                        Toast.makeText(mContext,"最後のフレームです",Toast.LENGTH_SHORT).show();
+                        setImage(mVideoTime);
+                        mMainImageView.setImageBitmap(opencvuse.setCircleMat(mSrcBitmap));
+                    }
+
+                }
+            }
+        });
+
+        mMinusButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (mFlag ==2){
+
+                    mTimeToPicture -= 5;
+                    if (mTimeToPicture >0) {
+                        setImage(mTimeToPicture);
+                        mMainImageView.setImageBitmap(opencvuse.setCircleMat(mSrcBitmap));
+                    }else {
+                        Toast.makeText(mContext,"0秒のフレームです",Toast.LENGTH_SHORT).show();
+                        setImage(0);
+                        mMainImageView.setImageBitmap(opencvuse.setCircleMat(mSrcBitmap));
+                    }
+                }
             }
         });
     }
