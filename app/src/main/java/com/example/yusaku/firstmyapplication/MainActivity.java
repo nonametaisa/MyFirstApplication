@@ -16,14 +16,13 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.core.Mat;
-
-import java.util.concurrent.ThreadPoolExecutor;
 
 
 public class MainActivity extends ActionBarActivity {
@@ -38,12 +37,14 @@ public class MainActivity extends ActionBarActivity {
     private int mIntSelectCircle=0;
     private int mVideoTime , mTimeToPicture;
     private Context mContext;
+    private TextView mTextView;
 
     private OpneCVUse opencvuse ;
-
+    int videoCapTime = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         mMainImageView = (ImageView)findViewById(R.id.myMainImageVew);
@@ -54,6 +55,7 @@ public class MainActivity extends ActionBarActivity {
         mNextButton = (Button)findViewById(R.id.nextButton);
         mMinusButton = (Button)findViewById(R.id.minusButton);
         mPlusButton = (Button)findViewById(R.id.plusButton);
+        mTextView = (TextView)findViewById(R.id.textView);
 
         opencvuse = new OpneCVUse();
 
@@ -79,7 +81,10 @@ public class MainActivity extends ActionBarActivity {
 
                    // setImage(mVideoTime / 500);
                     mTimeToPicture = mVideoTime / 200;
-                    setImage(0);
+
+                 //   Toast.makeText(mContext, String.valueOf(mTimeToPicture),Toast.LENGTH_SHORT).show();
+                 //   videoCapTime =mTimeToPicture;
+                    setImage(videoCapTime);
                    // mMainImageView.setImageBitmap(mSrcBitmap);
 
              //      mDstBitmap =opencvuse.setCircleMat(mSrcBitmap);
@@ -90,6 +95,17 @@ public class MainActivity extends ActionBarActivity {
                 }else if (mFlag == 3){
 
                     mMainImageView.setImageBitmap(opencvuse.getLineImage(mSrcBitmap));
+                    mFlag =4;
+
+                }else if(mFlag == 4){
+             //       setImage(videoCapTime);
+             //       mMainImageView.setImageBitmap(mSrcBitmap);
+                    setImage(videoCapTime +=4);
+                    mMainImageView.setImageBitmap(opencvuse.tenplateMatch(opencvuse.getMat(mSrcBitmap), opencvuse.getMat(mBallBitmap)));
+                    mBallBitmap =opencvuse.getMinusBallImage(mSrcBitmap);
+                    mSubImageView.setImageBitmap(mBallBitmap);
+                    Log.e("通ったよ", "");
+                    mTextView.setText(String.valueOf(opencvuse.pMinMaxResult.maxVal));
 
                 }
                 else {
@@ -136,10 +152,12 @@ public class MainActivity extends ActionBarActivity {
                     if (mVideoTime > (mTimeToPicture * 200)){
                         setImage(mTimeToPicture);
                         mMainImageView.setImageBitmap(opencvuse.setCircleMat(mSrcBitmap));
+                        videoCapTime = mTimeToPicture;
                     }else {
                         Toast.makeText(mContext,"最後のフレームです",Toast.LENGTH_SHORT).show();
                         setImage(mVideoTime);
                         mMainImageView.setImageBitmap(opencvuse.setCircleMat(mSrcBitmap));
+                        videoCapTime = mVideoTime;
                     }
 
                 }
@@ -155,10 +173,12 @@ public class MainActivity extends ActionBarActivity {
                     if (mTimeToPicture >0) {
                         setImage(mTimeToPicture);
                         mMainImageView.setImageBitmap(opencvuse.setCircleMat(mSrcBitmap));
+                        videoCapTime = mTimeToPicture;
                     }else {
                         Toast.makeText(mContext,"0秒のフレームです",Toast.LENGTH_SHORT).show();
                         setImage(0);
                         mMainImageView.setImageBitmap(opencvuse.setCircleMat(mSrcBitmap));
+                        videoCapTime = 0;
                     }
                 }
             }

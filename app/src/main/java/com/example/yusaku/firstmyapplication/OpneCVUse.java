@@ -68,9 +68,10 @@ public class OpneCVUse {
         mCirclCenterPosition.y = Math.round(circleData[1]);
         mRadius = Math.round(circleData[2]) + 40;
 
+   //     Mat m = roi((int)(mCirclCenterPosition.x -(mRadius /2)),
+   //             (int)(mCirclCenterPosition.y - (mRadius /2)),(int)mRadius ,(int)mRadius +20,bitmap);//円の端を切り取るためmRadius/2
         Mat m = roi((int)(mCirclCenterPosition.x -(mRadius /2)),
-                (int)(mCirclCenterPosition.y - (mRadius /2)),(int)mRadius,(int)mRadius,bitmap);//円の端を切り取るためmRadius/2
-
+                (int)(mCirclCenterPosition.y - (mRadius /2) -10),(int)mRadius ,(int)mRadius +10,bitmap);
         return getBitmap(m);
     }
 //////////////CIRCLE////////////////////////
@@ -213,28 +214,54 @@ public class OpneCVUse {
 
     private Mat mTMResult ;
     public Point pTMPoint;
-  public Bitmap tenplateMatch(Mat conparedImageMat, Mat conparImageMat , int Flag , int ixy, Mat moto){
+    public Core.MinMaxLocResult pMinMaxResult;
+
+  public Bitmap tenplateMatch(Mat conparedImageMat, Mat conparImageMat){
       Point tmPoint;
+      Mat tmp;
+      int x = (int)(mCirclCenterPosition.x -((conparImageMat.cols()/2) + 100) );
+      int y = (int)(mCirclCenterPosition.y - ((conparImageMat.rows()/2) + 100));
+      int width = 200 + conparImageMat.cols();
+      int height = 200 + conparImageMat.rows();
 
-      if (mTMResult != null){
-          mTMResult = new Mat(conparedImageMat.rows() - conparImageMat.rows() +1 , conparedImageMat.cols() - conparImageMat.cols() -1 , CvType.CV_32FC1);
-      }
+      tmp =roi(x,y, width, height,conparedImageMat );
 
-      Imgproc.matchTemplate(conparedImageMat, conparImageMat, mTMResult, Imgproc.TM_CCOEFF_NORMED);
 
-      Core.MinMaxLocResult minMaxLocResult =Core.minMaxLoc(mTMResult);  //この値を比べる次、一つ前からだいたいの値を範囲として投票が十分でない場合の値ははじくようにしたい
+      mTMResult = new Mat(tmp.cols() - conparImageMat.cols() +1 , tmp.rows() - conparImageMat.rows() -1 , CvType.CV_32FC1);
+      Imgproc.matchTemplate(tmp, conparImageMat, mTMResult, Imgproc.TM_CCOEFF_NORMED);
 
-      pTMPoint = minMaxLocResult.maxLoc;
-      tmPoint = new Point(conparImageMat.rows() + pTMPoint.x  , conparedImageMat.cols() + pTMPoint.y);
 
-      Core.rectangle(conparedImageMat,pTMPoint , tmPoint , new Scalar(255,0,0));
+      //mTMResult = new Mat(conparedImageMat.cols() - conparImageMat.cols() +1 , conparedImageMat.rows() - conparImageMat.rows() -1 , CvType.CV_32FC1);
+      //Imgproc.matchTemplate(conparedImageMat, conparImageMat, mTMResult, Imgproc.TM_CCOEFF_NORMED);
+
+
+      pMinMaxResult =Core.minMaxLoc(mTMResult);  //この値を比べる次、一つ前からだいたいの値を範囲として投票が十分でない場合の値ははじくようにしたい
+
+      pTMPoint = pMinMaxResult.maxLoc;
+      pTMPoint = new Point(pTMPoint.x + x , pTMPoint.y + y);
+      tmPoint = new Point(conparImageMat.cols() + pTMPoint.x  , conparImageMat.rows() + pTMPoint.y);
+      mCirclCenterPosition.x = (pTMPoint.x + tmPoint.x)/2;
+      mCirclCenterPosition.y =(pTMPoint.y + tmPoint.y) /2;
+              Core.rectangle(conparedImageMat,pTMPoint , tmPoint , new Scalar(255,0,0), 5);
 
       return getBitmap(conparedImageMat);
+
 
 
   }
 /////////////////////TM//////////////////////////
 ///////////////////OTHER/////////////////////////
+
+    private int mFrameMinus = 0;
+
+    public Bitmap getMinusBallImage(Bitmap bitmap){
+        mFrameMinus -=2;
+
+        Mat m = roi((int)(mCirclCenterPosition.x -(mRadius /2)),
+                (int)(mCirclCenterPosition.y - (mRadius /2) -10),(int)mRadius + mFrameMinus ,(int)mRadius +10 + mFrameMinus,bitmap);
+
+        return getBitmap(m);
+    }
 
     public Mat getMat(Bitmap src) {
 
@@ -333,6 +360,35 @@ public class OpneCVUse {
         Rect rect = new Rect(x,y,width,height);
 
         return new Mat(getMat(bitmap),rect);
+
+    }
+    private Mat roi(int x , int y , int width , int height, Mat  bitmap ){
+        Log.e("first     " ,"x = " +String.valueOf(x) + " y = " + String.valueOf(y) + " width =" + String.valueOf(width) + "height = " + String.valueOf(height) );
+        Log.e("cols = " + String.valueOf(bitmap.cols()) , "rows = " +String.valueOf(bitmap.rows()));
+        if (x < 0){
+            width = width - x;
+            x = 0;
+        }
+
+        if ((x + width) > bitmap.cols()){
+            x = bitmap.cols() - (x - bitmap.cols());
+        }
+
+        if (y < 0){
+            height = height -y;
+            y = 0;
+        }
+
+        if ((y + height) > bitmap.rows()){
+            y = bitmap.rows() -(y - bitmap.rows());
+        }
+        Point  p1= new Point(x , y);
+        Point p2 = new Point(x +width,y + height);
+        Core.rectangle(bitmap,p1,p2 ,new Scalar(255,0,0) , 5);
+        Rect rect = new Rect(x,y,width,height);
+        Log.e("Second      " ,"x = " +String.valueOf(x) + " y = " + String.valueOf(y) + " width =" + String.valueOf(width) + "height = " + String.valueOf(height) );
+
+        return new Mat(bitmap,rect);
 
     }
 ///////////////////OTHER/////////////////////////

@@ -66,4 +66,14 @@
         android:id="@+id/plusButton"
         android:layout_alignBottom="@+id/minusButton"
         android:layout_toStartOf="@+id/minusButton" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:text="Large Text"
+        android:id="@+id/textView"
+        android:layout_alignParentStart="true"
+        android:layout_above="@+id/selectButton"
+        android:layout_alignTop="@+id/plusButton" />
 </RelativeLayout>
