@@ -44,6 +44,8 @@ public class OpneCVUse {
         Imgproc.cvtColor(src, gray, Imgproc.COLOR_RGB2GRAY);
 
 
+
+
         Imgproc.HoughCircles(gray, mCirclMat, Imgproc.CV_HOUGH_GRADIENT, 2, gray.rows() / 4, 100, 50, 5, 50);
         circleMat = mCirclMat;
 
@@ -69,18 +71,30 @@ public class OpneCVUse {
         mRadius = Math.round(circleData[2]) + 40;
 
    //     Mat m = roi((int)(mCirclCenterPosition.x -(mRadius /2)),
-   //             (int)(mCirclCenterPosition.y - (mRadius /2)),(int)mRadius ,(int)mRadius +20,bitmap);//円の端を切り取るためmRadius/2
-        Mat m = roi((int)(mCirclCenterPosition.x -(mRadius /2)),
-                (int)(mCirclCenterPosition.y - (mRadius /2) -10),(int)mRadius ,(int)mRadius +10,bitmap);
+   //             (int)(mCirclCenterPosition.y - (mRadius /2)),(int)mRadius ,(int)mRadius,bitmap);//円の端を切り取るためmRadius/2
+   //     Mat m = roi((int)(mCirclCenterPosition.x -(mRadius /2)),
+   //             (int)(mCirclCenterPosition.y - (mRadius /2) ),(int)mRadius  ,(int)mRadius,bitmap);
+  //      Mat m = roi((int)(mCirclCenterPosition.x -(mRadius /2) -10),
+  //              (int)(mCirclCenterPosition.y - (mRadius /2) -10 ),(int)mRadius - 20  ,(int)mRadius -20, bitmap);
+        Mat m = roi((int)(mCirclCenterPosition.x -(mRadius /2) + 5),
+                (int)(mCirclCenterPosition.y - (mRadius /2) +5 ),(int)mRadius -10  ,(int)mRadius -10, bitmap);
         return getBitmap(m);
     }
+
+
 //////////////CIRCLE////////////////////////
 //////////////LINE//////////////////////////
-
+//////////////必要と思われるもの//////////////
+    public double slopePlusA = 0 , slopeMinus = 0;
+    public double interceptPlus = 0 , interceptMinus = 0;
+    public Point pLeftLinePoint , pRightLinePoint;
+    ///////////////////////////////////////////////////////////
     public float [] afloat;
     public float [] bfloat;
-    public int pIntLineCount = 0;
-    public int flagLineCount = 0;
+    public int pIntLineCount ;
+
+    private int mCount;
+
 
     public Bitmap getLineImage(Bitmap bitmap){
         Mat src = getMat(bitmap);
@@ -93,7 +107,7 @@ public class OpneCVUse {
         pIntLineCount =0;
         src =fncDrwLine(lines,src);
         Utils.matToBitmap(src,bitmap);
-        bitmap = serchDraw((int)mCirclCenterPosition.x,(int)mCirclCenterPosition.y,bitmap);
+        bitmap = serchDraw((int)mCirclCenterPosition.x,(int)mCirclCenterPosition.y,bitmap , lines);
 
 
         return bitmap;
@@ -105,8 +119,8 @@ public class OpneCVUse {
         Point pt1 = new Point();
         Point pt2 = new Point();
 
-        afloat = new float[150];
-        bfloat = new float[150];
+        afloat = new float[lin.cols()];
+        bfloat = new float[lin.cols()];
 
         for (int i = 0; i < lin.cols(); i++){
             data = lin.get(0, i);
@@ -118,25 +132,28 @@ public class OpneCVUse {
 
             if (pt1.x - pt2.x != 0) {
                 //傾き
-                afloat[pIntLineCount] = (float) ((pt1.y - pt2.y) / (pt1.x - pt2.x));
+                afloat[i] = (float) ((pt1.y - pt2.y) / (pt1.x - pt2.x));
                 //切片
-                bfloat[pIntLineCount] = (float)(pt2.y -afloat[pIntLineCount] *pt2.x);
+                bfloat[i] = (float)(pt2.y -afloat[pIntLineCount] *pt2.x);
 
-                pIntLineCount++;
 
-                if (pIntLineCount >= 150){
-                    pIntLineCount =0;
-                    flagLineCount = 150;
-                }
+
+            }else {
+                afloat[i] = 0;
+                bfloat[i] = (float)(pt2.y -afloat[pIntLineCount] *pt2.x);
+
             }
+
+            pIntLineCount++;
 
 
         }
+        mCount = lin.cols();
         Log.e("cunt Number is ", String.valueOf(pIntLineCount));
         return img;
     }
 
-    public Bitmap serchDraw(int x ,int y , Bitmap src ){
+    private Bitmap serchDraw(int x ,int y , Bitmap src  , Mat ln){
 
         int min = 0, max = 0;
 
@@ -144,31 +161,6 @@ public class OpneCVUse {
         float tmp;
         float result ;
         float minResult  = -9999, maxResult = 9999;
-
-        if (flagLineCount != 0){
-            for (int i = 0; i <flagLineCount ; i++){
-                //     tmp = afloat[i] * x + bfloat[i];
-                //     result = y - tmp;
-                tmp =  (y -bfloat[i]) / afloat[i];
-                result = tmp - x;
-
-                if (result < 0 &&  minResult < result){
-
-                    matchLineMini = tmp;
-                    min = i;
-                    minResult = result;
-                    Log.e("tmpcount =" , String.valueOf(min));
-
-                }else if (result > 0 && result < maxResult){
-                    matchLineMax = tmp;
-                    max = i;
-                    maxResult = result;
-                    Log.e("tmpcount =" , String.valueOf(max));
-                }
-
-            }
-
-        }else {
 
 
             for (int i = 0; i < pIntLineCount; i++) {
@@ -191,7 +183,7 @@ public class OpneCVUse {
                 }
 
             }
-        }
+
         Canvas canvas;
         canvas = new Canvas(src);
 
@@ -203,26 +195,155 @@ public class OpneCVUse {
         paint.setAntiAlias(true);
 
         // キャンバスに直線を描画する
-        canvas.drawLine((0 -bfloat[min]) / afloat[min],0,(src.getHeight() - bfloat[min]) / afloat[min],src.getHeight(),paint);
+  //      canvas.drawLine((0 -bfloat[min]) / afloat[min],0,(src.getHeight() - bfloat[min]) / afloat[min],src.getHeight(),paint);
         paint.setColor(Color.YELLOW);
-        canvas.drawLine((0 -bfloat[max]) / afloat[max],0,(src.getHeight() - bfloat[max]) / afloat[max],src.getHeight(),paint);
+  //      canvas.drawLine((0 -bfloat[max]) / afloat[max],0,(src.getHeight() - bfloat[max]) / afloat[max],src.getHeight(),paint);
+        slopePlusA = afloat[min];
+        slopeMinus = afloat[max];
+        interceptPlus = bfloat[min];
+        interceptMinus = bfloat[max];
+        /*　コメントアウト１
+        circleMatに入っている線分の端を見つけるのが目的だったが
+        そもそもレーン端をさしていない動画があったのでコメントアウト中 */
+        setpLeftLinePoint(ln, min);
+        setpRightLinePoint(ln, max);
+        paint.setColor(Color.WHITE);
+        canvas.drawCircle((float)pLeftLinePoint.x ,(float) pLeftLinePoint.y , 5 , paint);
+        paint.setColor(Color.BLACK);
+        canvas.drawCircle((float)pRightLinePoint.x ,(float) pRightLinePoint.y , 5 , paint);
+   // */
+        afloat = null;
+        bfloat = null;
         return src;
+
+    }
+
+    private void setpLeftLinePoint(Mat ln, int min){
+        double[] data;
+        data = ln.get(0,min);
+        pLeftLinePoint = new Point();
+        if (data[1] < data[3]){
+            pLeftLinePoint.x = data[2];
+            pLeftLinePoint.y = data[3];
+        }else {
+            pLeftLinePoint.x = data[0];
+            pLeftLinePoint.y = data[1];
+        }
+
+    }
+
+    private void setpRightLinePoint(Mat ln, int max){
+        double[] data;
+        data = ln.get(0,max);
+        pRightLinePoint = new Point();
+        if (data[1] < data[3]){
+            pRightLinePoint.x = data[2];
+            pRightLinePoint.y = data[3];
+        }else {
+            pRightLinePoint.x = data[0];
+            pRightLinePoint.y = data[1];
+        }
+    }
+
+    public Point getPlusIntersection(){
+
+        double alpha , beta ;
+        double x ,y;
+        alpha =  -(1 /slopeMinus);
+        beta =  (-alpha) * mCirclCenterPosition.x + mCirclCenterPosition.y ;
+        x = (beta - interceptMinus) / (slopeMinus - alpha);
+        y = slopeMinus * x + interceptMinus;
+        return new Point(x,y);
+
+    }
+
+
+    public Bitmap getPlusIntersection(Bitmap bitmap){
+
+        double alpha , beta ;
+        double x ,y;
+        Mat m;
+        alpha =  -(1 /slopeMinus);
+        beta =  (-alpha) * mCirclCenterPosition.x + mCirclCenterPosition.y ;
+        x = (beta - interceptMinus) / (slopeMinus - alpha);
+        y = slopeMinus * x + interceptMinus;
+        m = getMat(bitmap);
+        Core.circle(m ,new Point(x,y) , 10 , new Scalar(255,0,0) , 10 );
+
+        return getBitmap(m);
+
+    }
+    public Bitmap getMinusIntersection(Bitmap bitmap){
+
+        double alpha , beta ;
+        double x ,y;
+        Mat m;
+        alpha =  -(1 /slopePlusA);
+        beta =  (-alpha) * mCirclCenterPosition.x + mCirclCenterPosition.y ;
+        x = (beta - interceptPlus) / (slopePlusA - alpha);
+        y = slopePlusA * x + interceptPlus;
+
+        m = getMat(bitmap);
+        Core.circle(m ,new Point(x,y) , 10 , new Scalar(255,0,0) , 10 );
+
+        return getBitmap(m);
+
+
+    }
+    public Point getMinusIntersection(){
+
+        double alpha , beta ;
+        double x ,y;
+
+        alpha =  -(1 /slopePlusA);
+        beta =  (-alpha) * mCirclCenterPosition.x + mCirclCenterPosition.y ;
+        x = (beta - interceptPlus) / (slopePlusA - alpha);
+        y = slopePlusA * x + interceptPlus;
+
+        return new Point(x,y);
+
+
+    }
+
+    public Point ballPosition(Bitmap bitmap){
+        Point minusPoint , plusPoint;
+        Point ballXPosition = new Point();
+        minusPoint =getMinusIntersection();
+        plusPoint = getPlusIntersection();
+        ballXPosition.x = (106.6*(minusPoint.x- mCirclCenterPosition.x)) /(minusPoint.x - plusPoint.x);
+        ballXPosition.y = minusPoint.y;
+
+        return ballXPosition;
+
+    }
+    public Bitmap ballPosition(Bitmap bitmap , int i){
+        Point minusPoint , plusPoint;
+        Point ballXPosition = new Point();
+        minusPoint =getMinusIntersection();
+        plusPoint = getPlusIntersection();
+        ballXPosition.x = (106.6*(minusPoint.x- mCirclCenterPosition.x)) /(minusPoint.x - plusPoint.x);
+        ballXPosition.y = minusPoint.y;
+        bitmap = getMinusIntersection(bitmap);
+        bitmap = getPlusIntersection(bitmap);
+
+        return bitmap;
 
     }
 ///////////////////LINE//////////////////////////
 /////////////////////TM//////////////////////////
 
-    private Mat mTMResult ;
+
     public Point pTMPoint;
     public Core.MinMaxLocResult pMinMaxResult;
 
   public Bitmap tenplateMatch(Mat conparedImageMat, Mat conparImageMat){
       Point tmPoint;
       Mat tmp;
-      int x = (int)(mCirclCenterPosition.x -((conparImageMat.cols()/2) + 100) );
+      Mat mTMResult ;
+      int x = (int)(mCirclCenterPosition.x -((conparImageMat.cols()/2) + 75) );
       int y = (int)(mCirclCenterPosition.y - ((conparImageMat.rows()/2) + 100));
-      int width = 200 + conparImageMat.cols();
-      int height = 200 + conparImageMat.rows();
+      int width = 150 + conparImageMat.cols();
+      int height = 100 + conparImageMat.rows();
 
       tmp =roi(x,y, width, height,conparedImageMat );
 
@@ -243,6 +364,7 @@ public class OpneCVUse {
       mCirclCenterPosition.x = (pTMPoint.x + tmPoint.x)/2;
       mCirclCenterPosition.y =(pTMPoint.y + tmPoint.y) /2;
               Core.rectangle(conparedImageMat,pTMPoint , tmPoint , new Scalar(255,0,0), 5);
+      Core.circle(conparedImageMat,mCirclCenterPosition , 10 ,new Scalar(255,0,0));
 
       return getBitmap(conparedImageMat);
 
@@ -253,14 +375,36 @@ public class OpneCVUse {
 ///////////////////OTHER/////////////////////////
 
     private int mFrameMinus = 0;
+    private int mFramePlus = 0;
 
     public Bitmap getMinusBallImage(Bitmap bitmap){
         mFrameMinus -=2;
 
-        Mat m = roi((int)(mCirclCenterPosition.x -(mRadius /2)),
-                (int)(mCirclCenterPosition.y - (mRadius /2) -10),(int)mRadius + mFrameMinus ,(int)mRadius +10 + mFrameMinus,bitmap);
-
+    //    Mat m = roi((int)(mCirclCenterPosition.x -(mRadius /2)),
+     //           (int)(mCirclCenterPosition.y - (mRadius /2) -10),(int)mRadius + mFrameMinus ,(int)mRadius +10 + mFrameMinus,bitmap);
+        Mat m = roi((int)(mCirclCenterPosition.x -(mRadius /2) + 5),
+                (int)(mCirclCenterPosition.y - (mRadius /2) +5 ),(int)mRadius -10  ,(int)mRadius -10, bitmap);
         return getBitmap(m);
+    }
+
+    public Bitmap getPlusBallImage(Bitmap bitmap){
+        mFramePlus += 2;
+   //     Mat m = roi((int)(mCirclCenterPosition.x -(mRadius /2)),
+   //             (int)(mCirclCenterPosition.y - (mRadius /2) -10),(int)mRadius + mFramePlus ,(int)mRadius +10 + mFramePlus,bitmap);
+        Mat m = roi((int)(mCirclCenterPosition.x -(mRadius /2) + 5),
+                (int)(mCirclCenterPosition.y - (mRadius /2) +5 ),(int)mRadius -10  ,(int)mRadius -10, bitmap);
+        return getBitmap(m);
+    }
+
+    public Bitmap myHomography(Bitmap bitmap){
+
+        double bitmapArray[] = {
+                0,                  0,
+                bitmap.getWidth() , bitmap.getHeight()
+        };
+
+        return bitmap;
+
     }
 
     public Mat getMat(Bitmap src) {
@@ -392,9 +536,5 @@ public class OpneCVUse {
 
     }
 ///////////////////OTHER/////////////////////////
-
-
-
-
 
 }

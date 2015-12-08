@@ -35,7 +35,7 @@ public class MainActivity extends ActionBarActivity {
     private MediaMetadataRetriever mMediaMetadataRetriever;
     private Mat mSrcMat , mDstMat;
     private int mIntSelectCircle=0;
-    private int mVideoTime , mTimeToPicture;
+    private int mVideoTime , mTimeToPicture = 1;
     private Context mContext;
     private TextView mTextView;
 
@@ -80,7 +80,7 @@ public class MainActivity extends ActionBarActivity {
                     Toast.makeText(mContext,String.valueOf(mVideoTime) , Toast.LENGTH_SHORT).show();
 
                    // setImage(mVideoTime / 500);
-                    mTimeToPicture = mVideoTime / 200;
+                  //  mTimeToPicture = mVideoTime / 200;
 
                  //   Toast.makeText(mContext, String.valueOf(mTimeToPicture),Toast.LENGTH_SHORT).show();
                  //   videoCapTime =mTimeToPicture;
@@ -93,6 +93,7 @@ public class MainActivity extends ActionBarActivity {
                     mFlag =2;
 
                 }else if (mFlag == 3){
+                    setImage(0); //コメントアウト１が実行できるときに使用
 
                     mMainImageView.setImageBitmap(opencvuse.getLineImage(mSrcBitmap));
                     mFlag =4;
@@ -100,12 +101,18 @@ public class MainActivity extends ActionBarActivity {
                 }else if(mFlag == 4){
              //       setImage(videoCapTime);
              //       mMainImageView.setImageBitmap(mSrcBitmap);
-                    setImage(videoCapTime +=4);
+
+               //     mSrcBitmap =opencvuse.ballPosition(mSrcBitmap , 0);
+                    setImage(videoCapTime += 4 ); //コメントアウト１が実行可能のとき　また最後のsetImageを消す
                     mMainImageView.setImageBitmap(opencvuse.tenplateMatch(opencvuse.getMat(mSrcBitmap), opencvuse.getMat(mBallBitmap)));
                     mBallBitmap =opencvuse.getMinusBallImage(mSrcBitmap);
+                   // Bitmap b = opencvuse.ballPosition(mSrcBitmap,0);
                     mSubImageView.setImageBitmap(mBallBitmap);
                     Log.e("通ったよ", "");
                     mTextView.setText(String.valueOf(opencvuse.pMinMaxResult.maxVal));
+                   // videoCapTime += 4;
+
+//                    setImage(videoCapTime +=4);
 
                 }
                 else {
@@ -148,7 +155,7 @@ public class MainActivity extends ActionBarActivity {
             public void onClick(View v) {
                 if (mFlag ==2){
 
-                    mTimeToPicture += 5;
+                    mTimeToPicture += 6;
                     if (mVideoTime > (mTimeToPicture * 200)){
                         setImage(mTimeToPicture);
                         mMainImageView.setImageBitmap(opencvuse.setCircleMat(mSrcBitmap));
@@ -158,6 +165,7 @@ public class MainActivity extends ActionBarActivity {
                         setImage(mVideoTime);
                         mMainImageView.setImageBitmap(opencvuse.setCircleMat(mSrcBitmap));
                         videoCapTime = mVideoTime;
+
                     }
 
                 }
@@ -169,16 +177,18 @@ public class MainActivity extends ActionBarActivity {
             public void onClick(View v) {
                 if (mFlag ==2){
 
-                    mTimeToPicture -= 5;
+                    mTimeToPicture -= 4;
                     if (mTimeToPicture >0) {
                         setImage(mTimeToPicture);
                         mMainImageView.setImageBitmap(opencvuse.setCircleMat(mSrcBitmap));
                         videoCapTime = mTimeToPicture;
+
                     }else {
                         Toast.makeText(mContext,"0秒のフレームです",Toast.LENGTH_SHORT).show();
                         setImage(0);
                         mMainImageView.setImageBitmap(opencvuse.setCircleMat(mSrcBitmap));
                         videoCapTime = 0;
+                        mTimeToPicture = 0;
                     }
                 }
             }
