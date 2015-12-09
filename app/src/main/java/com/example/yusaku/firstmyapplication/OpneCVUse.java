@@ -195,9 +195,9 @@ public class OpneCVUse {
         paint.setAntiAlias(true);
 
         // キャンバスに直線を描画する
-  //      canvas.drawLine((0 -bfloat[min]) / afloat[min],0,(src.getHeight() - bfloat[min]) / afloat[min],src.getHeight(),paint);
+        canvas.drawLine((0 -bfloat[min]) / afloat[min],0,(src.getHeight() - bfloat[min]) / afloat[min],src.getHeight(),paint);
         paint.setColor(Color.YELLOW);
-  //      canvas.drawLine((0 -bfloat[max]) / afloat[max],0,(src.getHeight() - bfloat[max]) / afloat[max],src.getHeight(),paint);
+        canvas.drawLine((0 -bfloat[max]) / afloat[max],0,(src.getHeight() - bfloat[max]) / afloat[max],src.getHeight(),paint);
         slopePlusA = afloat[min];
         slopeMinus = afloat[max];
         interceptPlus = bfloat[min];
@@ -310,8 +310,7 @@ public class OpneCVUse {
         Point ballXPosition = new Point();
         minusPoint =getMinusIntersection();
         plusPoint = getPlusIntersection();
-        ballXPosition.x = (106.6*(minusPoint.x- mCirclCenterPosition.x)) /(minusPoint.x - plusPoint.x);
-        ballXPosition.y = minusPoint.y;
+
 
         return ballXPosition;
 
@@ -321,8 +320,6 @@ public class OpneCVUse {
         Point ballXPosition = new Point();
         minusPoint =getMinusIntersection();
         plusPoint = getPlusIntersection();
-        ballXPosition.x = (106.6*(minusPoint.x- mCirclCenterPosition.x)) /(minusPoint.x - plusPoint.x);
-        ballXPosition.y = minusPoint.y;
         bitmap = getMinusIntersection(bitmap);
         bitmap = getPlusIntersection(bitmap);
 
@@ -534,6 +531,59 @@ public class OpneCVUse {
 
         return new Mat(bitmap,rect);
 
+    }
+
+    /* square to arbitrary quadrangle transformation
+   (0,0)  (1,0)   竍�   (Px,Py)   (Qx,Qy)
+   (0,1)  (1,1)      (Rx,Ry)         (Sx,Sy)  */
+    double[][] createSquareToArbitraryQuadrangleTransform(double Px, double Py, double Qx, double Qy, double Rx, double Ry, double Sx, double Sy)
+    {
+        double[][] mat = new double[3][3];
+        mat[0][0] = (Qx*Py - Qy*Px)*(Sx - Rx) - (Sx*Ry - Sy*Rx)*(Qx - Px);
+        mat[1][0] = (Qx*Py - Qy*Px)*(Sy - Ry) - (Sx*Ry - Sy*Rx)*(Qy - Py);
+        mat[2][0] = (Sy - Ry)*(Qx - Px) + (Rx - Sx)*(Qy - Py);
+        mat[0][1] = (Ry*Px - Rx*Py)*(Sx - Qx) - (Sy*Qx - Sx*Qy)*(Rx - Px);
+        mat[1][1] = (Ry*Px - Rx*Py)*(Sy - Qy) - (Sy*Qx - Sx*Qy)*(Ry - Py);
+        mat[2][1] = (Sx - Qx)*(Ry - Py) - (Sy - Qy)*(Rx - Px);
+
+        mat[2][2] = Sx*Qy - Sy*Qx + Qx*Ry - Qy*Rx + Rx*Sy - Ry*Sx;
+        mat[0][2] = Px * mat[2][2];
+        mat[1][2] = Py * mat[2][2];
+
+        return mat;
+    }
+
+    /* rectangle to arbitrary quadrangle transformation
+        (0,0)  (W,0)   竍�   (Px,Py)   (Qx,Qy)
+        (0,H)  (W,H)      (Rx,Ry)         (Sx,Sy)  */
+    public double[][] createRectangleToArbitraryQuadrangleTransform(int W, int H, double Px, double Py, double Qx, double Qy, double Rx, double Ry, double Sx, double Sy)
+    {
+
+        double[][] mat = createSquareToArbitraryQuadrangleTransform(Px, Py, Qx, Qy, Rx, Ry, Sx, Sy);
+
+        mat[0][0] /= W;
+        mat[1][0] /= W;
+        mat[2][0] /= W;
+        mat[0][1] /= H;
+        mat[1][1] /= H;
+        mat[2][1] /= H;
+
+        return mat;
+    }
+
+    public Mat myMatrix(Bitmap bitmap , Mat mat , double x ,double y){
+        double p[] = new double[3];
+        Mat mat2 = new Mat(3,1, CvType.CV_32FC1);
+        Mat dstMat = new Mat(3,1,CvType.CV_32FC1);
+
+        p[0] = x;
+        p[1] = y;
+        p[2] = 1;
+
+        mat2.put(0,0,p);
+        Core.gemm(mat,mat2,1,mat,0,dstMat);
+
+        return dstMat;
     }
 ///////////////////OTHER/////////////////////////
 

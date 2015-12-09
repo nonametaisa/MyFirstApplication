@@ -38,7 +38,7 @@
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Cancel"
+        android:text="Finish"
         android:id="@+id/cancelButton"
         android:layout_alignBottom="@+id/actButton"
         android:layout_toEndOf="@+id/actButton" />
@@ -76,4 +76,11 @@
         android:layout_alignParentStart="true"
         android:layout_above="@+id/selectButton"
         android:layout_alignTop="@+id/plusButton" />
+
+    <ImageView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/laneImageView"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true" />
 </RelativeLayout>
