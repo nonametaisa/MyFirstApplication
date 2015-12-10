@@ -27,6 +27,7 @@ import android.widget.Toast;
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
+import org.opencv.android.Utils;
 import org.opencv.calib3d.Calib3d;
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
@@ -34,7 +35,9 @@ import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
+import org.opencv.core.Scalar;
 import org.opencv.highgui.Highgui;
+import org.opencv.imgproc.Imgproc;
 
 
 public class MainActivity extends ActionBarActivity {
@@ -178,13 +181,13 @@ public class MainActivity extends ActionBarActivity {
            public void onClick(View v) {
                Resources  r = getResources();
                Bitmap bitmap = BitmapFactory.decodeResource(r,R.drawable.my_lane);
-//               testhomo(bitmap);
+
                if (mFlag == 4) {
                    mMainImageView.setImageBitmap(null);
                    mSubImageView.setImageBitmap(null);
                   // bitmap = homography(bitmap);
 
-                   mLaneImageView.setImageBitmap(bitmap);
+                   mLaneImageView.setImageBitmap(homohomo(bitmap));
                }
 
 
@@ -307,8 +310,8 @@ public class MainActivity extends ActionBarActivity {
         double dafter[]	= {640.0, 640.0, .0, .0, .0, 480.0, 480.0, .0, 1.0, 1.0, 1.0, 1.0};
 
 
-        Mat _before	=new Mat(3, 4, CvType.CV_64FC1);	// 変換前の座標用変数(実体)
-        Mat _after	=new Mat(3, 4, CvType.CV_64FC1);	// 変換後の座標用変数(実体)
+        Mat _before	=new Mat(3, 4, Calib3d.RANSAC);	// 変換前の座標用変数(実体)
+        Mat _after	=new Mat(3, 4, Calib3d.RANSAC);	// 変換後の座標用変数(実体)
 
         _after.put(0, 0, dafter);
         _before.put(0,0,dbefore);
@@ -320,7 +323,7 @@ public class MainActivity extends ActionBarActivity {
         pAfter.put(0,0,dafter);
 
             Mat pHomography
-                    = new Mat(3,3, CvType.CV_64FC1);		//ホモグラフィ用領域を確保
+                    = new Mat(3,3, Calib3d.RANSAC);		//ホモグラフィ用領域を確保
 
             Calib3d.findHomography(pBefore, pAfter,Calib3d.RANSAC,10,pHomography);
 
@@ -409,6 +412,105 @@ public class MainActivity extends ActionBarActivity {
 
 
         Log.e("w =" +String.valueOf(bitmap.getWidth()) , " h =" + String.valueOf(bitmap.getHeight()));
+
+        return bitmap;
+
+
+    }
+
+    private Bitmap homohomo(Bitmap bitmap){
+        Mat src = new Mat();
+        src =opencvuse.getMat(bitmap);
+
+        mBallCount = mBallCount -1;
+
+        float[] dstPts = new float[]{
+                bitmap.getWidth() , 0,
+                0,                  0,
+                bitmap.getWidth() , bitmap.getHeight(),
+                0                 , bitmap.getHeight()
+        };
+/* good
+        float[] dstPts = new float[]{
+                0                 , 0,
+                bitmap.getWidth() , 0,
+                0                 , bitmap.getHeight(),
+                bitmap.getWidth() , bitmap.getHeight()
+        };
+*/
+        Point[] srcPointList = {
+                new Point(mLinePosition[2][mBallCount] , mLinePosition[3][mBallCount]),
+                new Point(mLinePosition[0][mBallCount] , mLinePosition[1][mBallCount]),
+                new Point(mLinePosition[2][0]          , mLinePosition[3][0] ),
+                new Point(mLinePosition[0][0]          , mLinePosition[1][0])
+        };
+
+
+
+        Point[] dstPointList = {
+            new Point(dstPts[0] , dstPts[1]),
+            new Point(dstPts[2] , dstPts[3]),
+            new Point(dstPts[4] , dstPts[5]),
+            new Point(dstPts[6] , dstPts[7])
+        };
+
+
+        MatOfPoint2f matOfPoint2f1 = new MatOfPoint2f();
+        MatOfPoint2f matOfPoint2f2 = new MatOfPoint2f();
+
+        matOfPoint2f1.fromArray(srcPointList);
+        matOfPoint2f2.fromArray(dstPointList);
+
+     //   Mat dst = new Mat(src.rows(),src.cols(),src.type());
+        Mat H = Calib3d.findHomography(matOfPoint2f1,matOfPoint2f2);
+     //   Mat H = Calib3d.findHomography(matOfPoint2f2,matOfPoint2f1);
+       // Imgproc.warpPerspective(src,dst,H , dst.size() , Imgproc.INTER_LINEAR);
+      //  Utils.matToBitmap(dst,bitmap);
+        Log.e("Mat H = " , H.dump());
+        double dt[];
+        double array[][] = new double[3][3];
+
+        for (int i = 0 ; i < H.cols() ; i ++){
+            for (int j = 0 ; j < H.rows() ; j ++) {
+                dt = H.get(i, j);
+                Log.e("dt length = ", String.valueOf(dt.length));
+                Log.e("i = " + String.valueOf(i) + "j = " + j +"dt[0 = ", String.valueOf(dt[0]));
+                array[i][j] = dt[0];
+            }
+        }
+
+        Point point = new Point();
+
+        Mat myMat = new Mat();
+        myMat = opencvuse.getMat(bitmap);
+
+        for (int i  = 0 ; i < mBallCount ; i ++ ) {
+
+            point.x = (mBallPosition[0][i] * array[0][0] + mBallPosition[1][i] * array[0][1] + array[0][2]) / (mBallPosition[0][i] * array[2][0] + mBallPosition[1][i] * array[2][1] + 1);
+            point.y = (mBallPosition[0][i] * array[1][0] + mBallPosition[1][i] * array[1][1] + array[1][2]) / (mBallPosition[0][i] * array[2][0] + mBallPosition[1][i] * array[2][1] + 1);
+          //  drawBitmap(bitmap,point);
+
+            Core.circle(myMat,point,10, new Scalar(255,0,0) , 20);
+        }
+
+        Utils.matToBitmap(myMat,bitmap);
+
+
+        Mat posiMat = new Mat(3,1,CvType.CV_32FC1);
+/*        for (int i = 0 ; i < mBallCount ; i ++) {
+
+            float tmpPosition[] = new float[]{
+                    (float) mBallPosition[0][i], (float) mBallPosition[1][i], 0
+            };
+            posiMat.put(0, 0, tmpPosition);
+            Mat result = new Mat(3,1,CvType.CV_32FC1);
+       //     Core.gemm(H, posiMat, 1, H, 0, result);
+
+            Log.e("result = ",result.dump());
+
+        }
+*/
+
 
         return bitmap;
 
